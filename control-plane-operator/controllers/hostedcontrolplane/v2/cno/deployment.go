@@ -113,6 +113,15 @@ func buildCNOEnvVars(cpContext component.WorkloadContext) ([]corev1.EnvVar, erro
 		{Name: "CLI_IMAGE", Value: userReleaseImageProvider.GetImage("cli")},
 	}
 
+	userVersionStr := userReleaseImageProvider.Version()
+	userVersion, err := semver.Parse(userVersionStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse version (%s): %w", userVersionStr, err)
+	}
+	if userVersion.GE(config.Version419) {
+		cnoEnv = append(cnoEnv, corev1.EnvVar{Name: "FRR_K8S_IMAGE", Value: userReleaseImageProvider.GetImage("metallb-frr")})
+	}
+
 	if !util.IsPrivateHCP(hcp) {
 		cnoEnv = append(cnoEnv, corev1.EnvVar{
 			Name: "PROXY_INTERNAL_APISERVER_ADDRESS", Value: "true",
